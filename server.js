@@ -1,22 +1,37 @@
-var express = require('express')
-var { graphqlHTTP } = require('express-graphql')
-var { buildSchema } = require('graphql')
+const express = require('express')
+const { MongoClient } = require('mongodb')
+const mongoose = require('mongoose')
+const baseConfig = require('./config')
+const { graphqlHTTP } = require('express-graphql')
+const { buildSchema } = require('graphql')
 const { ApolloServer, gql } = require('apollo-server')
+const resolvers = require('./api/resolvers')
+const typeDefs = require('./api/schema')
 
-const typeDefs = gql`
-  # The "Query" type is special: it lists all of the available queries that
-  # clients can execute, along with the return type for each. In this
-  # case, the "books" query returns an array of zero or more Books (defined above).
-  type Query {
-    hello: String
+const dbUrl = baseConfig.db.url
+
+const client = new MongoClient(dbUrl)
+
+async function run() {
+  try {
+    await client.connect()
+    console.log('Connected correctly to Mongo Database')
+  } catch (err) {
+    console.log(err.stack)
+  } finally {
+    await client.close()
   }
-`
-
-const resolvers = {
-  Query: {
-    hello: () => 'Hello Andres',
-  },
 }
+
+run().catch(console.dir)
+
+mongoose.connect(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+
+const db = mongoose.connection
+db.on('error', console.error.bind(console, 'connection error:'))
+db.once('open', function () {
+  console.log('mongoose conectado a mongo')
+})
 
 const server = new ApolloServer({ typeDefs, resolvers })
 server.listen().then(({ url }) => {

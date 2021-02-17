@@ -5,12 +5,13 @@ const env = process.env.NODE_ENV
 const pass = escape(process.env.MONGO_PASS) // hay que hacer un escape de la password
 const user = process.env.MONGO_USER
 const cluster = process.env.MONGO_CLUSTER_SANDBOX
+const db_name = 'androyd-db'
 
 const baseConfig = {
   port: 3000,
   secrets: {},
   db: {
-    url: `mongodb+srv://${user}:${pass}@${cluster}.mongodb.net/test?retryWrites=true&w=majority&useNewUrlParser=true&useUnifiedTopology=true`,
+    url: `mongodb+srv://${user}:${pass}@${cluster}.mongodb.net/${db_name}?retryWrites=true&w=majority&useNewUrlParser=true&useUnifiedTopology=true`,
   },
 }
 
