@@ -11,6 +11,11 @@ const typeDefs = gql`
     technicalPattern: String
     technicalPatternDuration: Float
     tags: [String]
+    createdAt: String
+    endDate: String
+    operationStatus: String
+    operationActiveDays: Int
+    operationPerformance: Float
   }
 
   input NewOperation {
@@ -24,6 +29,12 @@ const typeDefs = gql`
     tags: [String]
   }
 
+  type StockNote {
+    isSuccessNote: Boolean
+    noteDate: String
+    noteText: String
+  }
+
   type Stock {
     id: ID!
     tickerSymbol: String!
@@ -31,17 +42,18 @@ const typeDefs = gql`
     daysActive: Int
     weeksActive: Float
     currentStopLoss: Float
-    journalNotes: [String]
+    journalNotes: [StockNote]
     historicalData: [String]
     operationsList: [Operation]
   }
 
   type Query {
-    getOperations(tickerSymbol: String!): [Operation]
+    stock(tickerSymbol: String!): Stock
   }
 
   type Mutation {
     newOperation(input: NewOperation): Operation
+    closeOperation(id: ID!): Operation
   }
 `
 module.exports = typeDefs

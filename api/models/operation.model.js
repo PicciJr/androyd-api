@@ -31,6 +31,9 @@ const operationSchema = new mongoose.Schema(
     tags: {
       type: Array,
     },
+    endDate: {
+      type: String
+    }
   },
   { timestamps: true }
 )

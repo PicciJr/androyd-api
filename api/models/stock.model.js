@@ -27,16 +27,13 @@ const stockSchema = new mongoose.Schema(
     },
     historicalData: {
       type: Array,
-    },
-    operationsList: {
-      type: Array,
-    },
+    }
   },
   { timestamps: true }
 )
 
 const stocksCollection = 'stocks'
 
-const Operation = mongoose.model(stocksCollection, stockSchema)
+const Stock = mongoose.model(stocksCollection, stockSchema)
 
-module.exports = Operation
+module.exports = Stock
