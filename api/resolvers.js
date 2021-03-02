@@ -8,6 +8,16 @@ module.exports = {
       const stock = await Stock.findOne({ tickerSymbol: tickerSymbol }).exec()
       return stock
     },
+    async backtestingResults(_, { startDate, endDate }, __, ____) {
+      console.log('backtestingResults')
+      const startDateFormatted = new Date(startDate)
+      const endDateFormatted = new Date(endDate)
+      const operationsToAnalyze = await Operation.find({
+        createdAt: { $gte: startDateFormatted },
+        endDate: { $lte: endDateFormatted },
+      })
+      return operationsToAnalyze
+    },
   },
   Mutation: {
     async newOperation(_, { input }, ___, ____) {
@@ -15,7 +25,7 @@ module.exports = {
       const newOperation = await Operation.create(input)
     },
     async closeOperation(_, { id }, ___, ____) {
-      console.log('closeOperation', id);
+      console.log('closeOperation', id)
       const end_date = new Date().toString()
       const operation = await Operation.findByIdAndUpdate(id, {
         endDate: end_date,
@@ -38,7 +48,7 @@ module.exports = {
       console.log('operationStatus')
       const today = new Date()
       return operation.createdAt.getTime() <= today.getTime() &&
-        operation.endDate !== 'null'
+        typeof operation.endDate === 'undefined'
         ? 'In progress'
         : 'Closed'
     },
@@ -52,6 +62,16 @@ module.exports = {
     operationPerformance(operation, _, __) {
       // TODO: calcular usando el API financiera
       return 80.5
+    },
+  },
+  BacktestingResult: {
+    highlights(operationsToAnalyze, _, __) {
+      console.log(
+        'voy a extraer las conclusiones de las siguientes operaciones',
+        operationsToAnalyze
+      )
+      return ['conclusion 1']
+      // TODO: computar un array de conclusiones en base a los datos de las operaciones que me llegan
     },
   },
 }

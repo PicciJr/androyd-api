@@ -34,6 +34,11 @@ const typeDefs = gql`
     noteDate: String
     noteText: String
   }
+  
+  type BacktestingResult {
+    highlights: [String] # conclusiones computadas en base a los resultados
+    # TODO: necesitará el resto de campos: rentabilidad, hit rate, esp. matemática, etc
+  }
 
   type Stock {
     id: ID!
@@ -49,6 +54,7 @@ const typeDefs = gql`
 
   type Query {
     stock(tickerSymbol: String!): Stock
+    backtestingResults(startDate: String!, endDate: String!): BacktestingResult
   }
 
   type Mutation {

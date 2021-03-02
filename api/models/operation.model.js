@@ -32,7 +32,7 @@ const operationSchema = new mongoose.Schema(
       type: Array,
     },
     endDate: {
-      type: String
+      type: Date
     }
   },
   { timestamps: true }
