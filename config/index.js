@@ -13,6 +13,14 @@ const baseConfig = {
   db: {
     url: `mongodb+srv://${user}:${pass}@${cluster}.mongodb.net/${db_name}?retryWrites=true&w=majority&useNewUrlParser=true&useUnifiedTopology=true`,
   },
+  finhubApi: {
+    url: 'https://finnhub.io/api/v1',
+    api_key: process.env.FINHUB_API_KEY,
+  },
+  fmpApi: {
+    url: 'https://financialmodelingprep.com/api/v3',
+    api_key: process.env.FMP_API_KEY
+  }
 }
 
 let envConfig = {}

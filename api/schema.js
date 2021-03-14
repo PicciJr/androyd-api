@@ -34,22 +34,26 @@ const typeDefs = gql`
     noteDate: String
     noteText: String
   }
-  
+
   type BacktestingResult {
     highlights: [String] # conclusiones computadas en base a los resultados
     # TODO: necesitará el resto de campos: rentabilidad, hit rate, esp. matemática, etc
   }
 
   type Stock {
-    id: ID!
+    id: ID
     tickerSymbol: String!
+    hasActiveOperation: Boolean
     currentPerformance: Float
+    currentPrice: Float
     daysActive: Int
     weeksActive: Float
     currentStopLoss: Float
     journalNotes: [StockNote]
     historicalData: [String]
     operationsList: [Operation]
+    isOnWatchlist: Boolean
+    isStockToAvoid: Boolean
   }
 
   type Query {
@@ -60,6 +64,8 @@ const typeDefs = gql`
   type Mutation {
     newOperation(input: NewOperation): Operation
     closeOperation(id: ID!): Operation
+    addStockToWatchlist(tickerSymbol: String): Stock
+    removeStockFromWatchlist(tickerSymbol: String): Stock
   }
 `
 module.exports = typeDefs

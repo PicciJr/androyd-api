@@ -27,7 +27,13 @@ const stockSchema = new mongoose.Schema(
     },
     historicalData: {
       type: Array,
-    }
+    },
+    isOnWatchlist: {
+      type: Boolean,
+    },
+    isStockToAvoid: {
+      type: Boolean,
+    },
   },
   { timestamps: true }
 )
