@@ -19,8 +19,11 @@ const baseConfig = {
   },
   fmpApi: {
     url: 'https://financialmodelingprep.com/api/v3',
-    api_key: process.env.FMP_API_KEY
-  }
+    api_key: process.env.FMP_API_KEY,
+  },
+  finviz: {
+    url: 'https://finviz.com/',
+  },
 }
 
 let envConfig = {}

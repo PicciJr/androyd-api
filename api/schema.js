@@ -59,6 +59,7 @@ const typeDefs = gql`
   type Query {
     stock(tickerSymbol: String!): Stock
     backtestingResults(startDate: String!, endDate: String!): BacktestingResult
+    screenerResults: [Stock]
   }
 
   type Mutation {

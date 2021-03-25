@@ -2,6 +2,7 @@ const Operation = require('./models/operation.model')
 const Stock = require('./models/stock.model')
 const { finhubApi } = require('../services')
 const { finhubApiKey } = require('../services')
+const { getScreeningResults } = require('../services/finviz')
 
 module.exports = {
   Query: {
@@ -32,6 +33,10 @@ module.exports = {
         endDate: { $lte: endDateFormatted },
       })
       return operationsToAnalyze
+    },
+    screenerResults(_, __, ___, _____) {
+      console.log('screenerResults')
+      return getScreeningResults()
     },
   },
   Mutation: {

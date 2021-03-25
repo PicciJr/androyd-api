@@ -35,5 +35,5 @@ db.once('open', function () {
 
 const server = new ApolloServer({ typeDefs, resolvers })
 server.listen().then(({ url }) => {
-  console.log(`🚀  Server ready at ${url}`)
+  console.log(`🚀  Graphql Server ready at ${url}`)
 })
