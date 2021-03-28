@@ -43,6 +43,8 @@ const typeDefs = gql`
   type Stock {
     id: ID
     tickerSymbol: String!
+    name: String
+    industry: String
     hasActiveOperation: Boolean
     currentPerformance: Float
     currentPrice: Float

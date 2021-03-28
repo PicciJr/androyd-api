@@ -20,15 +20,19 @@ finviz.interceptors.request.use(
   }
 )
 
-const isOffHighsValid = ({ yearHigh, price }) => {
+const isOffHighsValid = ({ yearHigh = null, price = null }) => {
   // en el momento en el que esta funcion se cumpla, ya me habré topado realmente con el primer valor invalido
-  const offValidMeasure = 1 - 0.25 // 25% de distancia a maximos como mucho
-  return price * offValidMeasure <= yearHigh
+  if (yearHigh !== nul && price !== null) {
+    const offValidMeasure = 1 - 0.25 // 25% de distancia a maximos como mucho
+    return price * offValidMeasure <= yearHigh
+  } else return false
 }
 
-const isValidMarketCap = ({ marketCap }) => {
-  const maxMarketCapAllowed = 40000000000 // 40B
-  return marketCap <= maxMarketCapAllowed
+const isValidMarketCap = ({ marketCap = null }) => {
+  if (marketCap !== null) {
+    const maxMarketCapAllowed = 40000000000 // 40B
+    return marketCap <= maxMarketCapAllowed
+  } else return false
 }
 
 const isValidIpoDate = ({ ipoDate } = 2015) => {
@@ -85,18 +89,13 @@ module.exports = {
 
     let nonMatchingElementHasBeenFound = false // true tras encontrar el primer valor que esté a +25% maximos
 
-    // 2 - Consultar con API cada valor, en el momento en el que uno de ellos
-    // tiene un max 52W highs superior a 25%, parar la paginación en Finviz
-    // para optimizar el numero de llamadas, limpiar primero el array quitando todos aquellos elementos
-    // que ya esté siguiendo
-
+    let maxCallsApiReached = 30
     let i = 0
     while (!nonMatchingElementHasBeenFound) {
-      nonMatchingElementHasBeenFound = true
       for (const symbol of batchOfElementsToScan) {
         try {
           i++
-          if (i < 3) {
+          if (i <= maxCallsApiReached) {
             const symbolQuoteApiResponse = await getCompanyQuote(symbol)
             const symbolProfileApiResponse = await getCompanyProfile(symbol)
             const stockData = await getStockFromDatabase(symbol)
@@ -111,7 +110,23 @@ module.exports = {
                 isValidIpoDate(symbolProfileApiResponse.data[0]) &&
                 !isStockAlreadyInWatchlist
               ) {
-                symbolsToQuery.push(symbol)
+                symbolsToQuery.push({
+                  tickerSymbol: symbol,
+                  name: symbolQuoteApiResponse.data[0].name,
+                  industry: symbolProfileApiResponse.data[0].industry,
+                })
+              }
+
+              // paginar si corresponde
+              if (numberOfElementsPerPage >= 20) {
+                numberOfElementsPerPage = batchOfElementsToScan.length + 1
+                batchOfElementsToScan = await getWeeklyTopStocksFromFinviz(
+                  numberOfElementsPerPage
+                )
+              } else {
+                // ya no ay que iterar más ya que no hay más paginacion
+                nonMatchingElementHasBeenFound = true
+                break
               }
             } else {
               nonMatchingElementHasBeenFound = true
@@ -120,6 +135,7 @@ module.exports = {
           }
         } catch (err) {
           console.log('error bucle', err)
+          return null
         }
       }
     }
@@ -128,7 +144,6 @@ module.exports = {
       nonMatchingElementHasBeenFound,
       symbolsToQuery
     )
-
-    // 3 - si el valor cumple los demás criterios añadir a listado de seguimiento
+    return symbolsToQuery
   },
 }
