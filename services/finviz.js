@@ -25,14 +25,14 @@ const isOffHighsValid = ({ yearHigh = null, price = null }) => {
   if (yearHigh !== nul && price !== null) {
     const offValidMeasure = 1 - 0.25 // 25% de distancia a maximos como mucho
     return price * offValidMeasure <= yearHigh
-  } else return false
+  } else return true
 }
 
 const isValidMarketCap = ({ marketCap = null }) => {
   if (marketCap !== null) {
     const maxMarketCapAllowed = 40000000000 // 40B
     return marketCap <= maxMarketCapAllowed
-  } else return false
+  } else return true
 }
 
 const isValidIpoDate = ({ ipoDate } = 2015) => {
@@ -42,7 +42,7 @@ const isValidIpoDate = ({ ipoDate } = 2015) => {
   if (typeof ipoDate !== 'undefined') {
     const year = ipoDate.split('-')[0]
     return parseInt(year) > maxIpoDateAllowed
-  }
+  } else return true
 }
 
 const getStockFromDatabase = async (symbol) => {
