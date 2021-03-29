@@ -20,28 +20,36 @@ finviz.interceptors.request.use(
   }
 )
 
-const isOffHighsValid = ({ yearHigh = null, price = null }) => {
-  // en el momento en el que esta funcion se cumpla, ya me habré topado realmente con el primer valor invalido
-  if (yearHigh !== nul && price !== null) {
-    const offValidMeasure = 1 - 0.25 // 25% de distancia a maximos como mucho
-    return price * offValidMeasure <= yearHigh
+const isOffHighsValid = (data) => {
+  if (typeof data[0] !== 'undefined') {
+    const { yearHigh = null, price = null } = data[0]
+    if (yearHigh !== null && price !== null) {
+      const offValidMeasure = 1 - 0.25 // 25% de distancia a maximos como mucho
+      return price * offValidMeasure <= yearHigh
+    } else return true
   } else return true
 }
 
-const isValidMarketCap = ({ marketCap = null }) => {
-  if (marketCap !== null) {
-    const maxMarketCapAllowed = 40000000000 // 40B
-    return marketCap <= maxMarketCapAllowed
+const isValidMarketCap = (data) => {
+  if (typeof data[0] !== 'undefined') {
+    const { marketCap = null } = data[0]
+    if (marketCap !== null) {
+      const maxMarketCapAllowed = 40000000000 // 40B
+      return marketCap <= maxMarketCapAllowed
+    } else return true
   } else return true
 }
 
-const isValidIpoDate = ({ ipoDate } = 2015) => {
-  // le tengo que asignar un valor por defecto en el parametro
-  // por si la llamada a la API no retorna un ipoDate, que para algunos valores pasa
-  const maxIpoDateAllowed = 2015
-  if (typeof ipoDate !== 'undefined') {
-    const year = ipoDate.split('-')[0]
-    return parseInt(year) > maxIpoDateAllowed
+const isValidIpoDate = (data) => {
+  if (typeof data[0] !== 'undefined') {
+    const { ipoDate = null } = data[0]
+    // le tengo que asignar un valor por defecto en el parametro
+    // por si la llamada a la API no retorna un ipoDate, que para algunos valores pasa
+    const maxIpoDateAllowed = 2015
+    if (ipoDate !== null) {
+      const year = ipoDate.split('-')[0]
+      return parseInt(year) > maxIpoDateAllowed
+    } else return true
   } else return true
 }
 
@@ -89,13 +97,15 @@ module.exports = {
 
     let nonMatchingElementHasBeenFound = false // true tras encontrar el primer valor que esté a +25% maximos
 
-    let maxCallsApiReached = 30
-    let i = 0
+    let maxCallsApiReached = 20
+    let callsIndex = 0
+    let batchIndex = 0
     while (!nonMatchingElementHasBeenFound) {
       for (const symbol of batchOfElementsToScan) {
         try {
-          i++
-          if (i <= maxCallsApiReached) {
+          callsIndex++
+          batchIndex++
+          if (callsIndex <= maxCallsApiReached) {
             const symbolQuoteApiResponse = await getCompanyQuote(symbol)
             const symbolProfileApiResponse = await getCompanyProfile(symbol)
             const stockData = await getStockFromDatabase(symbol)
@@ -103,38 +113,44 @@ module.exports = {
               stockData !== null && stockData.isOnWatchlist
 
             // validacion primaria, si no se cumple, ya termino de paginar y buscar en finviz
-            if (isOffHighsValid(symbolQuoteApiResponse.data[0])) {
+            if (isOffHighsValid(symbolQuoteApiResponse.data)) {
               // validaciones secundarias
               if (
-                isValidMarketCap(symbolQuoteApiResponse.data[0]) &&
-                isValidIpoDate(symbolProfileApiResponse.data[0]) &&
+                isValidMarketCap(symbolQuoteApiResponse.data) &&
+                isValidIpoDate(symbolProfileApiResponse.data) &&
                 !isStockAlreadyInWatchlist
               ) {
                 symbolsToQuery.push({
                   tickerSymbol: symbol,
-                  name: symbolQuoteApiResponse.data[0].name,
-                  industry: symbolProfileApiResponse.data[0].industry,
+                  name:
+                    symbolQuoteApiResponse.data.length > 0
+                      ? symbolQuoteApiResponse.data[0].name
+                      : '(Sin nombre)',
+                  industry:
+                    symbolProfileApiResponse.data.length > 0
+                      ? symbolProfileApiResponse.data[0].industry
+                      : '(Sin industria)',
                 })
               }
 
               // paginar si corresponde
-              if (numberOfElementsPerPage >= 20) {
+              if (
+                numberOfElementsPerPage >= 20 &&
+                batchIndex >= numberOfElementsPerPage
+              ) {
                 numberOfElementsPerPage = batchOfElementsToScan.length + 1
                 batchOfElementsToScan = await getWeeklyTopStocksFromFinviz(
                   numberOfElementsPerPage
                 )
-              } else {
-                // ya no ay que iterar más ya que no hay más paginacion
-                nonMatchingElementHasBeenFound = true
-                break
-              }
+                batchIndex = 0
+              } else nonMatchingElementHasBeenFound = true // ya no debo paginar mas porque no hay mas elementos
             } else {
               nonMatchingElementHasBeenFound = true
               break
             }
           }
         } catch (err) {
-          console.log('error bucle', err)
+          console.log('error bucle', err, symbol)
           return null
         }
       }
