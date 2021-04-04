@@ -130,7 +130,7 @@ module.exports = {
         isStockAlreadyInWatchlist =
           stockData !== null && stockData.isOnWatchlist
 
-        // validacion primaria, si no se cumple, ya termino de paginar y buscar en finviz
+        // validacion primaria, si no se cumple ya termino de paginar y buscar en finviz
         if (isOffHighsValid(symbolQuoteApiResponse.data)) {
           // validaciones secundarias
           if (
