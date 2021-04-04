@@ -94,7 +94,7 @@ const getWeeklyTopStocksFromFinviz = async (offset = null) => {
 module.exports = {
   getScreeningResults: async () => {
     const symbolsToQuery = [] // array en el que se anidarán los elementos finales
-    let batchOfElementsToScan = await getWeeklyTopStocksFromFinviz() // como son varias paginas, voy haciendo batchs de elementos para consultarlos
+    let batchOfElementsToScan = await getWeeklyTopStocksFromFinviz() // como son varias paginas voy haciendo batches de elementos para consultarlos
     let numberOfElementsPerPage = 0
 
     if (batchOfElementsToScan.length > 0)
