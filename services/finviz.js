@@ -39,7 +39,7 @@ const isValidMarketCap = (data) => {
   if (typeof data[0] !== 'undefined') {
     const { marketCap = null, symbol = null } = data[0]
     if (marketCap !== null) {
-      const maxMarketCapAllowed = 40000000000 // 40B
+      const maxMarketCapAllowed = 40000000000 // 40 Billones
       console.log('isValidMarketCap', marketCap <= maxMarketCapAllowed, symbol)
       return marketCap <= maxMarketCapAllowed
     } else return true
