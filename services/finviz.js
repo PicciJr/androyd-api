@@ -22,19 +22,25 @@ finviz.interceptors.request.use(
 
 const isOffHighsValid = (data) => {
   if (typeof data[0] !== 'undefined') {
-    const { yearHigh = null, price = null } = data[0]
+    const { yearHigh = null, price = null, symbol = null } = data[0]
     if (yearHigh !== null && price !== null) {
       const offValidMeasure = 1 - 0.25 // 25% de distancia a maximos como mucho
-      return price * offValidMeasure <= yearHigh
+      console.log(
+        'isOffHighsValid',
+        yearHigh * offValidMeasure <= price,
+        symbol
+      )
+      return yearHigh * offValidMeasure <= price
     } else return true
   } else return true
 }
 
 const isValidMarketCap = (data) => {
   if (typeof data[0] !== 'undefined') {
-    const { marketCap = null } = data[0]
+    const { marketCap = null, symbol = null } = data[0]
     if (marketCap !== null) {
       const maxMarketCapAllowed = 40000000000 // 40B
+      console.log('isValidMarketCap', marketCap <= maxMarketCapAllowed, symbol)
       return marketCap <= maxMarketCapAllowed
     } else return true
   } else return true
@@ -42,12 +48,13 @@ const isValidMarketCap = (data) => {
 
 const isValidIpoDate = (data) => {
   if (typeof data[0] !== 'undefined') {
-    const { ipoDate = null } = data[0]
+    const { ipoDate = null, symbol = null } = data[0]
     // le tengo que asignar un valor por defecto en el parametro
     // por si la llamada a la API no retorna un ipoDate, que para algunos valores pasa
     const maxIpoDateAllowed = 2015
     if (ipoDate !== null) {
       const year = ipoDate.split('-')[0]
+      console.log('isValidIpoDate', parseInt(year) > maxIpoDateAllowed, symbol)
       return parseInt(year) > maxIpoDateAllowed
     } else return true
   } else return true
@@ -92,74 +99,81 @@ module.exports = {
 
     if (batchOfElementsToScan.length > 0)
       numberOfElementsPerPage = batchOfElementsToScan.length
-    console.log('elementos por pagina', numberOfElementsPerPage)
-    console.log('array de simbolos a escanear', batchOfElementsToScan)
 
-    let nonMatchingElementHasBeenFound = false // true tras encontrar el primer valor que esté a +25% maximos
-
-    let maxCallsApiReached = 20
+    let maxCallsApiReached = 240
     let callsIndex = 0
-    let batchIndex = 0
-    while (!nonMatchingElementHasBeenFound) {
-      for (const symbol of batchOfElementsToScan) {
-        try {
-          callsIndex++
-          batchIndex++
-          if (callsIndex <= maxCallsApiReached) {
-            const symbolQuoteApiResponse = await getCompanyQuote(symbol)
-            const symbolProfileApiResponse = await getCompanyProfile(symbol)
-            const stockData = await getStockFromDatabase(symbol)
-            const isStockAlreadyInWatchlist =
-              stockData !== null && stockData.isOnWatchlist
+    let batchIndex = 1 // no puede empezar en cero
+    let pageOffset = 0
+    let index = 0
 
-            // validacion primaria, si no se cumple, ya termino de paginar y buscar en finviz
-            if (isOffHighsValid(symbolQuoteApiResponse.data)) {
-              // validaciones secundarias
-              if (
-                isValidMarketCap(symbolQuoteApiResponse.data) &&
-                isValidIpoDate(symbolProfileApiResponse.data) &&
-                !isStockAlreadyInWatchlist
-              ) {
-                symbolsToQuery.push({
-                  tickerSymbol: symbol,
-                  name:
-                    symbolQuoteApiResponse.data.length > 0
-                      ? symbolQuoteApiResponse.data[0].name
-                      : '(Sin nombre)',
-                  industry:
-                    symbolProfileApiResponse.data.length > 0
-                      ? symbolProfileApiResponse.data[0].industry
-                      : '(Sin industria)',
-                })
-              }
+    let symbol = null
+    let symbolQuoteApiResponse = null
+    let symbolProfileApiResponse = null
+    let stockData = null
+    let isStockAlreadyInWatchlist = null
+    while (
+      batchOfElementsToScan.length > 0 &&
+      callsIndex <= maxCallsApiReached
+    ) {
+      console.log(
+        'itero en bucle',
+        callsIndex
+      )
+      try {
+        batchIndex++
+        symbol = batchOfElementsToScan[index]
+        symbolQuoteApiResponse = await getCompanyQuote(symbol)
+        callsIndex++
+        symbolProfileApiResponse = await getCompanyProfile(symbol)
+        callsIndex++
+        stockData = await getStockFromDatabase(symbol)
+        isStockAlreadyInWatchlist =
+          stockData !== null && stockData.isOnWatchlist
 
-              // paginar si corresponde
-              if (
-                numberOfElementsPerPage >= 20 &&
-                batchIndex >= numberOfElementsPerPage
-              ) {
-                numberOfElementsPerPage = batchOfElementsToScan.length + 1
-                batchOfElementsToScan = await getWeeklyTopStocksFromFinviz(
-                  numberOfElementsPerPage
-                )
-                batchIndex = 0
-              } else nonMatchingElementHasBeenFound = true // ya no debo paginar mas porque no hay mas elementos
-            } else {
-              nonMatchingElementHasBeenFound = true
-              break
-            }
+        // validacion primaria, si no se cumple, ya termino de paginar y buscar en finviz
+        if (isOffHighsValid(symbolQuoteApiResponse.data)) {
+          // validaciones secundarias
+          if (
+            isValidMarketCap(symbolQuoteApiResponse.data) &&
+            isValidIpoDate(symbolProfileApiResponse.data) &&
+            !isStockAlreadyInWatchlist
+          ) {
+            symbolsToQuery.push({
+              tickerSymbol: symbol,
+              name:
+                symbolQuoteApiResponse.data.length > 0
+                  ? symbolQuoteApiResponse.data[0].name
+                  : '(Sin nombre)',
+              industry:
+                symbolProfileApiResponse.data.length > 0
+                  ? symbolProfileApiResponse.data[0].industry
+                  : '(Sin industria)',
+            })
           }
-        } catch (err) {
-          console.log('error bucle', err, symbol)
-          return null
+
+          index++
+
+          // paginar si corresponde
+          if (
+            numberOfElementsPerPage >= 20 &&
+            batchIndex >= numberOfElementsPerPage
+          ) {
+            pageOffset = batchIndex + 1
+            batchOfElementsToScan = await getWeeklyTopStocksFromFinviz(
+              pageOffset
+            )
+            numberOfElementsPerPage = batchOfElementsToScan.length
+            index = 0
+          }
+        } else {
+          console.log('entro a else final', symbol)
+          batchOfElementsToScan = [] // reseteo para salir del bucle
         }
+      } catch (err) {
+        console.log('error bucle', err, symbol)
+        return null
       }
     }
-    console.log(
-      'finalizo bucle while',
-      nonMatchingElementHasBeenFound,
-      symbolsToQuery
-    )
     return symbolsToQuery
   },
 }
